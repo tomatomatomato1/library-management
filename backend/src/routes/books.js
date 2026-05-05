@@ -16,8 +16,6 @@ const BOOK_SELECT = {
   language: true,
   createdAt: true,
   updatedAt: true,
-  totalCopies: true,      // ✅ 添加
-  availableCopies: true,  // ✅ 添加
 };
 
 function normalizeText(value) {
