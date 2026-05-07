@@ -50,7 +50,14 @@ function AdminDashboard() {
       description: '发布和管理公告',
       href: '/admin/announcements',
       icon: '📝'
+    },
+    {
+    title: '系统配置',
+    description: '配置借阅规则、逾期罚款等全局参数',
+    href: '/admin/config',
+    icon: '⚙️'
     }
+
   ];
 
   return (

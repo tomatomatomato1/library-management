@@ -10,21 +10,9 @@ async function main() {
   await prisma.wishlist.deleteMany();
   await prisma.rating.deleteMany();
   await prisma.book.deleteMany();
+  await prisma.config.deleteMany(); 
 
-  // 检查是否存在配置项，如果不存在则添加
-  const existingConfig = await prisma.config.findFirst({
-    where: { key: 'FINE_RATE_PER_DAY' }
-  });
-
-  if (!existingConfig) {
-    await prisma.config.create({
-      data: {
-        key: 'FINE_RATE_PER_DAY',
-        value: '0.50',
-      },
-    });
-  }
-
+  
   // 图书数据
   const booksData = [
     { title: 'The Pragmatic Programmer', author: 'David Thomas', genre: 'Technology' },
@@ -104,12 +92,14 @@ async function main() {
   }
 
   // 添加配置项
-  await prisma.config.create({
-    data: {
-      key: 'FINE_RATE_PER_DAY',
-      value: '0.50',
-    },
-  });
+await prisma.config.upsert({
+  where: { key: 'FINE_RATE_PER_DAY' },
+  update: {}, // 如果已存在，不做任何更新（或可改为 update: { value: '0.5' }）
+  create: {
+    key: 'FINE_RATE_PER_DAY',
+    value: '0.5',
+  },
+});
 
   console.log('Seed data inserted successfully');
 }

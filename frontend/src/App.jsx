@@ -1,3 +1,4 @@
+<Route path="/admin/config" element={<div>✅ 路由匹配成功</div>} />
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import BookSearch from './pages/BookSearch';
@@ -11,6 +12,8 @@ import Announcements from './pages/Announcements';
 import AdminAnnouncements from './pages/AdminAnnouncements';
 import UserManagement from './pages/UserManagement';
 import Messages from './pages/Messages';
+import SystemConfig from './pages/SystemConfig';
+
 
 function App() {
   const navigate = useNavigate();
@@ -73,6 +76,7 @@ function App() {
           <UnifiedLogin />
         )
       } />
+      <Route path="/admin/config" element={<SystemConfig />} />
     </Routes>
   );
 }
