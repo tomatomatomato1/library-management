@@ -52,26 +52,32 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // 图书馆员登录
+    // 图书馆员登录（改为从 User 表查询）
     if (type === 'librarian') {
-      const librarian = await prisma.librarian.findUnique({
-        where: { employeeId: email }
+      const librarian = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { employeeId: email },
+            { email: email }
+          ],
+          role: 'LIBRARIAN'
+        }
       });
 
       if (!librarian) {
         return res.status(401).json({ error: '工号不存在', type: 'librarian' });
       }
 
-      const isValid = await bcrypt.compare(password, librarian.password);
+      const isValid = await bcrypt.compare(password, librarian.passwordHash);
       if (!isValid) {
         return res.status(401).json({ error: '密码错误', type: 'librarian' });
       }
 
-      const token = signLibrarianToken({
+      const token = signToken({
+        sub: String(librarian.id),
         id: librarian.id,
-        employeeId: librarian.employeeId,
-        name: librarian.name,
-        role: 'LIBRARIAN'
+        role: librarian.role,
+        employeeId: librarian.employeeId
       });
 
       return res.json({
@@ -80,7 +86,9 @@ router.post('/login', async (req, res) => {
         librarian: {
           id: librarian.id,
           name: librarian.name,
-          employeeId: librarian.employeeId
+          employeeId: librarian.employeeId,
+          email: librarian.email,
+          role: librarian.role
         }
       });
     }
@@ -168,7 +176,7 @@ router.post('/login-student', async (req, res) => {
   }
 });
 
-// --- 图书馆员注册接口 ---
+// --- 图书馆员注册接口（改为写入 User 表）---
 router.post('/register', async (req, res) => {
   const { employeeId, name, password } = req.body;
 
@@ -180,7 +188,8 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const existing = await prisma.librarian.findUnique({
+    // 检查工号是否已存在（在 User 表中）
+    const existing = await prisma.user.findFirst({
       where: { employeeId: employeeId }
     });
     if (existing) {
@@ -188,11 +197,14 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const librarian = await prisma.librarian.create({
+    // 创建馆员到 User 表
+    const librarian = await prisma.user.create({
       data: {
         employeeId: employeeId,
         name: name,
-        password: hashedPassword
+        passwordHash: hashedPassword,
+        email: `${employeeId}@librarian.com`, // 生成默认邮箱
+        role: 'LIBRARIAN'
       }
     });
 
@@ -201,7 +213,9 @@ router.post('/register', async (req, res) => {
       librarian: {
         id: librarian.id,
         employeeId: librarian.employeeId,
-        name: librarian.name
+        name: librarian.name,
+        email: librarian.email,
+        role: librarian.role
       }
     });
   } catch (error) {
@@ -210,29 +224,35 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// --- 图书馆员登录接口 ---
+// --- 图书馆员登录接口（改为从 User 表查询）---
 router.post('/login-librarian', async (req, res) => {
   const { employeeId, password } = req.body;
 
   try {
-    const librarian = await prisma.librarian.findUnique({
-      where: { employeeId: employeeId }
+    const librarian = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { employeeId: employeeId },
+          { email: employeeId }
+        ],
+        role: 'LIBRARIAN'
+      }
     });
 
     if (!librarian) {
       return res.status(401).json({ error: '工号不存在' });
     }
 
-    const isValid = await bcrypt.compare(password, librarian.password);
+    const isValid = await bcrypt.compare(password, librarian.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: '密码错误' });
     }
 
-    const token = signLibrarianToken({
+    const token = signToken({
+      sub: String(librarian.id),
       id: librarian.id,
-      employeeId: librarian.employeeId,
-      name: librarian.name,
-      role: 'LIBRARIAN'
+      role: librarian.role,
+      employeeId: librarian.employeeId
     });
 
     res.json({
@@ -241,7 +261,9 @@ router.post('/login-librarian', async (req, res) => {
       librarian: {
         id: librarian.id,
         name: librarian.name,
-        employeeId: librarian.employeeId
+        employeeId: librarian.employeeId,
+        email: librarian.email,
+        role: librarian.role
       }
     });
   } catch (error) {

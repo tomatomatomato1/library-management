@@ -1,25 +1,7 @@
 const prisma = require('../lib/prisma');
 const { verifyLibrarianToken } = require('../lib/librarianToken');
 
-function normalizeQueryResult(result) {
-  if (Array.isArray(result)) {
-    return result.length > 0 ? result[0] : null;
-  }
-  return result || null;
-}
-
-async function findLibrarianById(id) {
-  if (prisma.librarian) {
-    return prisma.librarian.findUnique({ where: { id } });
-  }
-  const result = await prisma.$queryRaw`
-    SELECT id, employee_id AS "employeeId", name, created_at AS "createdAt", updated_at AS "updatedAt"
-    FROM librarians
-    WHERE id = ${id}
-    LIMIT 1
-  `;
-  return normalizeQueryResult(result);
-}
+// 删除 normalizeQueryResult 和 findLibrarianById 函数（不再需要）
 
 function extractBearerToken(authorizationHeader) {
   if (!authorizationHeader) {
@@ -46,19 +28,35 @@ async function requireLibrarianAuth(req, res, next) {
 
   try {
     const payload = verifyLibrarianToken(token);
-    const librarianId = Number(payload.id);
+    const userId = Number(payload.id);
 
-    if (!librarianId) {
+    if (!userId) {
       return res.status(401).json({ error: 'Token payload is invalid' });
     }
 
-    const librarian = await findLibrarianById(librarianId);
+    // 改为查询 User 表，role='LIBRARIAN'
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        role: 'LIBRARIAN'
+      },
+      select: {
+        id: true,
+        employeeId: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
 
-    if (!librarian) {
+    if (!user) {
       return res.status(401).json({ error: 'Librarian no longer exists' });
     }
 
-    req.librarian = librarian;
+    // 将 user 信息附加到 req.user（统一使用 req.user）
+    req.user = user;
     req.librarianAuth = payload;
     return next();
   } catch (error) {

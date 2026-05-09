@@ -32,27 +32,30 @@ model User {
   email                  String                  @unique
   passwordHash           String
   studentId              String?                 @unique
+  employeeId             String?                 @unique  // 馆员工号（你的功能需要）
   role                   Role                    @default(STUDENT)
   createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
   loans                  Loan[]
   ratings                Rating[]
   holds                  Hold[]
   wishlists              Wishlist[]
   auditLogs              AuditLog[]
   announcementPublishers AnnouncementPublisher[]
-  sentMessages           Message[]               @relation(name: "MessageSender")
-  receivedMessages       Message[]               @relation(name: "MessageReceiver")
+  sentMessages           Message[]               @relation("MessageSender")  // 站内信（你的功能需要）
+  receivedMessages       Message[]               @relation("MessageReceiver")  // 站内信（你的功能需要）
 }
 
 model Book {
-  id              Int        @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   title           String
   author          String
-  isbn            String     @unique
+  isbn            String   @unique
   genre           String
   description     String?
-  language        String     @default("English")
-  createdAt       DateTime   @default(now())
+  language        String   @default("English")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
   copies          Copy[]
   ratings         Rating[]
   holds           Hold[]
@@ -60,17 +63,18 @@ model Book {
 }
 
 model Copy {
-  id             Int        @id @default(autoincrement())
-  bookId         Int
-  book           Book       @relation(fields: [bookId], references: [id])
-  barcode        String     @unique
-  floor          Int
-  libraryArea    String
-  shelfNo        String
-  shelfLevel     Int
-  status         CopyStatus @default(AVAILABLE)
-  createdAt      DateTime   @default(now())
-  loans          Loan[]
+  id          Int        @id @default(autoincrement())
+  bookId      Int
+  book        Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  barcode     String     @unique
+  floor       Int?
+  libraryArea String?
+  shelfNo     String?
+  shelfLevel  Int?
+  status      CopyStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  loans       Loan[]
 }
 
 model Loan {
@@ -80,11 +84,12 @@ model Loan {
   checkoutDate DateTime  @default(now())
   dueDate      DateTime
   returnDate   DateTime?
-  fineAmount   Float?    @default(0)
-  finePaid     Boolean?  @default(false)
-  fineForgiven Boolean?  @default(false)
-  renewCount   Int       @default(0)
+  fineAmount   Float     @default(0)
+  finePaid     Boolean   @default(false)
+  fineForgiven Boolean   @default(false)
+  renewCount   Int       @default(0)  // 续借次数（你的功能需要）
   createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
   copy         Copy      @relation(fields: [copyId], references: [id])
   user         User      @relation(fields: [userId], references: [id])
 }
@@ -94,10 +99,10 @@ model Rating {
   bookId    Int
   userId    Int
   stars     Int      @default(1)
-  review    String?
+  review    String?  // 评论内容（你的功能需要）
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  book      Book     @relation(fields: [bookId], references: [id])
+  updatedAt DateTime @updatedAt  // 评论更新时间（你的功能需要）
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([bookId, userId])
@@ -109,7 +114,7 @@ model Hold {
   userId    Int
   status    HoldStatus @default(WAITING)
   createdAt DateTime   @default(now())
-  book      Book       @relation(fields: [bookId], references: [id])
+  book      Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
   user      User       @relation(fields: [userId], references: [id])
 }
 
@@ -118,16 +123,18 @@ model Wishlist {
   bookId    Int
   userId    Int
   createdAt DateTime @default(now())
-  book      Book     @relation(fields: [bookId], references: [id])
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([bookId, userId])
 }
 
 model Config {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  value String
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AuditLog {
@@ -139,17 +146,6 @@ model AuditLog {
   detail    String?
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id])
-}
-
-model Librarian {
-  id         Int      @id @default(autoincrement())
-  employeeId String   @unique @map("employee_id")
-  name       String
-  password   String
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@map("librarians")
 }
 
 model Announcement {
@@ -175,14 +171,13 @@ model AnnouncementPublisher {
 }
 
 model Message {
-  id        Int      @id @default(autoincrement())
-  senderId  Int
+  id         Int      @id @default(autoincrement())
+  senderId   Int
   receiverId Int
-  content   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  sender   User @relation(name: "MessageSender", fields: [senderId], references: [id])
-  receiver User @relation(name: "MessageReceiver", fields: [receiverId], references: [id])
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
 }

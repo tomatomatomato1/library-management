@@ -39,55 +39,55 @@ export default function LibrarianLogin({ onLogin, onSwitchToRegister }) {
     return true
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    const isEmployeeIdValid = validateEmployeeId(employeeId)
-    const isPasswordValid = validatePassword(password)
-    
-    if (!isEmployeeIdValid || !isPasswordValid) {
-      setError('请填写完整信息')
-      return
-    }
-
-    setError('')
-    setLoading(true)
-
-    try {
-      const res = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: employeeId,  // 馆员登录使用工号作为 email 字段
-          password, 
-          type: 'librarian' 
-        })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || '登录失败')
-      }
-
-      // 记住工号
-      if (rememberMe) {
-        localStorage.setItem('savedEmployeeId', employeeId)
-      } else {
-        localStorage.removeItem('savedEmployeeId')
-      }
-
-      // 保存 token 和用户信息
-      localStorage.setItem('librarianToken', data.token)
-      localStorage.setItem('librarianInfo', JSON.stringify(data.librarian))
-      
-      onLogin(data.librarian, data.token)
-    } catch (err) {
-      setError(err.message || '网络错误，请确保后端已启动')
-    } finally {
-      setLoading(false)
-    }
+ const handleSubmit = async (e) => {
+  e.preventDefault()
+  
+  const isEmployeeIdValid = validateEmployeeId(employeeId)
+  const isPasswordValid = validatePassword(password)
+  
+  if (!isEmployeeIdValid || !isPasswordValid) {
+    setError('请填写完整信息')
+    return
   }
+
+  setError('')
+  setLoading(true)
+
+  try {
+    const res = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: employeeId,  // 馆员登录使用工号作为 email 字段
+        password, 
+        type: 'librarian' 
+      })
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.error || '登录失败')
+    }
+
+    // 记住工号
+    if (rememberMe) {
+      localStorage.setItem('savedEmployeeId', employeeId)
+    } else {
+      localStorage.removeItem('savedEmployeeId')
+    }
+
+    // 保存 token 和用户信息（改为统一存储）
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data.librarian))
+    
+    onLogin(data.librarian, data.token)
+  } catch (err) {
+    setError(err.message || '网络错误，请确保后端已启动')
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">

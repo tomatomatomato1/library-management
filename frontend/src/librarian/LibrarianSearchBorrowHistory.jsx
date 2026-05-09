@@ -1,6 +1,7 @@
 // LibrarianSearchBorrowHistory.jsx
 import { useState } from 'react'
 import IsbnBarcode from '../components/IsbnBarcode'
+import { API_URL, getAuthHeaders } from './api' 
 export default function LibrarianSearchBorrowHistory({ onBack }) {
   const [searchType, setSearchType] = useState('username') // 'username' 或 'studentId'
   const [searchValue, setSearchValue] = useState('')
@@ -23,51 +24,48 @@ export default function LibrarianSearchBorrowHistory({ onBack }) {
   }
 
   // 查询借阅历史
-  const searchBorrowHistory = async () => {
-    if (!searchValue.trim()) {
-      setError('请输入用户名或学号')
-      return
-    }
+const searchBorrowHistory = async () => {
+  if (!searchValue.trim()) {
+    setError('请输入用户名或学号')
+    return
+  }
 
-    setLoading(true)
-    setError('')
-    setSearchPerformed(true)
+  setLoading(true)
+  setError('')
+  setSearchPerformed(true)
 
-    try {
-      // 根据搜索类型调用不同的API
-      const endpoint = searchType === 'username' 
-        ? `/api/librarian/search-history/by-name?name=${encodeURIComponent(searchValue)}`
-        : `/api/librarian/search-history/by-studentId?studentId=${encodeURIComponent(searchValue)}`
+  try {
+    // 根据搜索类型调用不同的API
+    const endpoint = searchType === 'username' 
+      ? `${API_URL}/librarian/search-history/by-name?name=${encodeURIComponent(searchValue)}`
+      : `${API_URL}/librarian/search-history/by-studentId?studentId=${encodeURIComponent(searchValue)}`
 
-      const response = await fetch(endpoint, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('librarianToken')}`,
-          'Content-Type': 'application/json'
-        }
-      })
+    const response = await fetch(endpoint, {
+      headers: getAuthHeaders(),
+    })
 
-      const data = await response.json()
+    const data = await response.json()
 
-      if (response.ok && data.success) {
-        setBorrowHistory(data.borrowHistory || [])
-        setUserInfo(data.userInfo)
-        if (data.borrowHistory.length === 0) {
-          setError('该用户暂无借阅记录')
-        }
-      } else {
-        setError(data.message || '未找到该用户或查询失败')
-        setBorrowHistory([])
-        setUserInfo(null)
+    if (response.ok && data.success) {
+      setBorrowHistory(data.borrowHistory || [])
+      setUserInfo(data.userInfo)
+      if (data.borrowHistory.length === 0) {
+        setError('该用户暂无借阅记录')
       }
-    } catch (error) {
-      console.error('查询借阅历史失败:', error)
-      setError('网络错误，请稍后重试')
+    } else {
+      setError(data.message || '未找到该用户或查询失败')
       setBorrowHistory([])
       setUserInfo(null)
-    } finally {
-      setLoading(false)
     }
+  } catch (error) {
+    console.error('查询借阅历史失败:', error)
+    setError('网络错误，请稍后重试')
+    setBorrowHistory([])
+    setUserInfo(null)
+  } finally {
+    setLoading(false)
   }
+}
 
   // 获取状态对应的样式和文本
   const getStatusInfo = (status) => {

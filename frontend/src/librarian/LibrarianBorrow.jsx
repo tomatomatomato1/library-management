@@ -27,8 +27,9 @@ export default function LibrarianBorrow() {
     setLoading(true)
     try {
       const response = await fetch(`${API_URL}/loans/users/search?keyword=${encodeURIComponent(studentKeyword)}`, {
-        headers: getAuthHeaders('librarian'),
-      })
+  headers: getAuthHeaders(),  // 去掉 'librarian'
+})
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -58,7 +59,7 @@ export default function LibrarianBorrow() {
     setLoading(true)
     try {
       const response = await fetch(`${API_URL}/loans/books/search?keyword=${encodeURIComponent(bookKeyword)}`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
 
@@ -89,7 +90,7 @@ export default function LibrarianBorrow() {
     setLoading(true)
     try {
       const response = await fetch(`${API_URL}/loans/users/scan?studentId=${encodeURIComponent(studentId)}`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
 
@@ -119,7 +120,7 @@ export default function LibrarianBorrow() {
     setLoading(true)
     try {
       const response = await fetch(`${API_URL}/loans/books/scan?isbn=${encodeURIComponent(isbn)}`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
 
@@ -155,7 +156,7 @@ export default function LibrarianBorrow() {
   const fetchLoanRecords = async () => {
     try {
       const response = await fetch(`${API_URL}/loans/records`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
       if (response.ok) {
@@ -185,7 +186,7 @@ export default function LibrarianBorrow() {
     try {
       const response = await fetch(`${API_URL}/loans/lend`, {
         method: 'POST',
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
         body: JSON.stringify({ 
           userId: selectedStudent.id, 
           bookId: selectedBook.id 

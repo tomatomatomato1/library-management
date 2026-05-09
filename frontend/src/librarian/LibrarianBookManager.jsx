@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import IsbnBarcode from '../components/IsbnBarcode'
-import { LIBRARIAN_API_URL } from './api'
+import { API_URL } from './api'
 
 const initialForm = {
   title: '',
@@ -72,7 +72,7 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch(`${LIBRARIAN_API_URL}/books`)
+      const response = await fetch(`${API_URL}/books`)
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || '获取图书列表失败')
       setBooks(Array.isArray(data.data) ? data.data : [])
@@ -103,7 +103,7 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
   
     try {
       // 第一步：先在数据库搜索
-      const response = await fetch(`http://localhost:3001/api/books/search?keyword=${encodeURIComponent(keyword)}`);
+      const response = await fetch(`${API_URL}/books/search?keyword=${encodeURIComponent(keyword)}`);
       const data = await response.json();
     
       // 如果找到了结果
@@ -120,7 +120,7 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
       if (isIsbnFormat(keyword)) {
         setError('未在馆藏中找到，正在从豆瓣获取信息...');
       
-        const lookupRes = await fetch(`http://localhost:3001/api/books/lookup?isbn=${keyword}`);
+        const lookupRes = await fetch(`${API_URL}/books/lookup?isbn=${keyword}`);
         const lookupData = await lookupRes.json();
       
         if (lookupData.success && lookupData.data) {
@@ -193,9 +193,11 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
   }
 
   const handleUnauthorized = () => {
-    setError('登录状态已失效，请重新登录')
-    if (onLogout) onLogout()
-  }
+  setError('登录状态已失效，请重新登录')
+  localStorage.removeItem('token')  // 删除统一 token
+  localStorage.removeItem('user')   // 删除统一 user
+  if (onLogout) onLogout()
+}
 
   const handleLookupByIsbn = async () => {
     const isbn = normalizeIsbn(form.isbn)
@@ -221,7 +223,7 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
 
     try {
       const params = new URLSearchParams({ isbn })
-      const response = await fetch(`${LIBRARIAN_API_URL}/books/lookup?${params}`)
+      const response = await fetch(`${API_URL}/books/lookup?${params}`)
       const data = await response.json()
 
       if (!response.ok || !data.success) {
@@ -273,11 +275,11 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
     setSaving(true)
 
     try {
-      const token = localStorage.getItem('librarianToken')
+      const token = localStorage.getItem('token')
       const response = await fetch(
         isEditing
-          ? `${LIBRARIAN_API_URL}/books/${editingBookId}`
-          : `${LIBRARIAN_API_URL}/books`,
+          ? `${API_URL}/books/${editingBookId}`
+          : `${API_URL}/books`,
         {
           method: isEditing ? 'PUT' : 'POST',
           headers: {
@@ -332,8 +334,8 @@ export default function LibrarianBookManager({ librarian, onBack, onLogout }) {
     setSuccess('')
 
     try {
-      const token = localStorage.getItem('librarianToken')
-      const response = await fetch(`${LIBRARIAN_API_URL}/books/${book.id}`, {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`${API_URL}/books/${book.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })

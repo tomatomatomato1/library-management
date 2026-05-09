@@ -23,19 +23,19 @@ useEffect(() => {
     try {
       // 获取图书数量
       const booksRes = await fetch(`${API_URL}/books`, {
-        headers: getAuthHeaders('librarian')
+        headers: getAuthHeaders()
       })
       const booksData = await booksRes.json()
       
       // 获取借阅记录
       const loansRes = await fetch(`${API_URL}/loans/records`, {
-        headers: getAuthHeaders('librarian')
+        headers: getAuthHeaders()
       })
       const loansData = await loansRes.json()
 
       // 获取今日借阅数量
       const todayRes = await fetch(`${API_URL}/statistics/today-loans`, {
-        headers: getAuthHeaders('librarian')
+        headers: getAuthHeaders()
       })
       const todayData = await todayRes.json()
 
@@ -57,13 +57,12 @@ useEffect(() => {
 }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem('librarianToken')
-    localStorage.removeItem('librarianInfo')
-    localStorage.removeItem('savedEmployeeId')
-    if (onLogout) {
-      onLogout()
-    }
+  localStorage.removeItem('token')
+  localStorage.removeItem('user')
+  if (onLogout) {
+    onLogout()
   }
+}
 
   // 获取当前时间问候语
   const getGreeting = () => {

@@ -4,7 +4,7 @@ import { MessageSquare, Send, User } from 'lucide-react';
 const API_BASE = 'http://localhost:3001/api';
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('librarianToken');
+  const token = localStorage.getItem('token');  // 改为统一 token
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -26,6 +26,8 @@ async function request(path, options = {}) {
   }
   return data;
 }
+
+
 
 export default function LibrarianMessages() {
   const [conversations, setConversations] = useState([]);

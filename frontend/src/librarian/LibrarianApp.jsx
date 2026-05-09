@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import LibrarianLogin from './LibrarianLogin'
 import LibrarianRegister from './LibrarianRegister'
 import LibrarianDashboard from './LibrarianDashboard'
-import { isLibrarianAuthenticated, librarianLogout } from './api'
+import { isAuthenticated, logout } from './api'  // 改为新函数
 
 function LibrarianApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -11,15 +11,21 @@ function LibrarianApp() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 检查登录状态
-    if (isLibrarianAuthenticated()) {
-      const savedLibrarian = localStorage.getItem('librarianInfo')
-      if (savedLibrarian) {
+    // 检查登录状态 - 使用新函数
+    if (isAuthenticated()) {
+      const savedUser = localStorage.getItem('user')  // 改为 'user'
+      if (savedUser) {
         try {
-          setLibrarian(JSON.parse(savedLibrarian))
-          setIsLoggedIn(true)
+          const user = JSON.parse(savedUser)
+          // 检查是否是馆员角色
+          if (user.role === 'LIBRARIAN' || user.role === 'ADMIN') {
+            setLibrarian(user)
+            setIsLoggedIn(true)
+          } else {
+            logout()
+          }
         } catch (e) {
-          librarianLogout()
+          logout()
         }
       }
     }
@@ -27,15 +33,15 @@ function LibrarianApp() {
   }, [])
 
   const handleLogin = (user, token) => {
-    localStorage.setItem('librarianToken', token)
-    localStorage.setItem('librarianInfo', JSON.stringify(user))
+    localStorage.setItem('token', token)  // 改为 'token'
+    localStorage.setItem('user', JSON.stringify(user))  // 改为 'user'
     setIsLoggedIn(true)
     setLibrarian(user)
     setShowRegister(false)
   }
 
   const handleLogout = () => {
-    librarianLogout()
+    logout()  // 使用新函数
     setIsLoggedIn(false)
     setLibrarian(null)
   }

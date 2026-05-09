@@ -24,7 +24,7 @@ export default function LibrarianReturnBooks({ onBack }) {
       setError('')
 
       const response = await fetch(`${API_URL}/loans/records`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
 
@@ -58,7 +58,7 @@ export default function LibrarianReturnBooks({ onBack }) {
 
       const response = await fetch(`${API_URL}/loans/return`, {
         method: 'POST',
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
         body: JSON.stringify({ loanId, waiveFine }),
       })
       const data = await response.json()
@@ -102,7 +102,7 @@ export default function LibrarianReturnBooks({ onBack }) {
     setLoading(true)
     try {
       const response = await fetch(`${API_URL}/loans/loans/scan?isbn=${encodeURIComponent(isbn)}`, {
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
       })
       const data = await response.json()
 
@@ -149,7 +149,7 @@ export default function LibrarianReturnBooks({ onBack }) {
 
       const response = await fetch(`${API_URL}/loans/return`, {
         method: 'POST',
-        headers: getAuthHeaders('librarian'),
+        headers: getAuthHeaders(),
         body: JSON.stringify({ loanId: loan.id, waiveFine }),
       })
       const data = await response.json()

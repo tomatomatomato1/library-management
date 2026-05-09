@@ -7,13 +7,15 @@ const cors = require('cors');
 // 1. 引入路由文件
 const booksRouter = require('./routes/books');
 const logsRouter = require('./routes/logs');
-const loansRouter = require('./routes/loans'); // 你的借阅路由
+const loansRouter = require('./routes/loans'); // 借阅路由
 const authRouter = require('./routes/auth');   // 鉴权路由
 const readersRouter = require('./routes/readers');
 const readerBorrowRouter = require('./routes/reader-borrow');
 const announcementsRouter = require('./routes/announcements');
-const messagesRouter = require('./routes/messages');
-const ratingsRouter = require('./routes/ratings');
+const messagesRouter = require('./routes/messages');                              // 你的：消息路由
+const ratingsRouter = require('./routes/ratings');                                // 你的：评分路由
+const librarianSearchBorrowHistory = require('./routes/LibrarianSearchBorrowHistory');  // 你的：馆员搜索历史
+const statisticsRoutes = require('./routes/statistics');                          // 你的：统计路由
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -32,13 +34,15 @@ app.use('/api/auth', authRouter);           // 学生登录
 app.use('/api/librarian/auth', authRouter); // 馆员登录
 app.use('/api/books', booksRouter);
 app.use('/api/logs', logsRouter);
-app.use('/api/loans', loansRouter);         // 你的借阅历史入口
+app.use('/api/loans', loansRouter);         // 借阅历史入口
 app.use('/api/announcements', announcementsRouter);
-app.use('/api/messages', messagesRouter);   // 消息系统路由
-app.use('/api/ratings', ratingsRouter);      // 评分评价路由
+app.use('/api/messages', messagesRouter);   // 消息系统路由（你的）
+app.use('/api/ratings', ratingsRouter);     // 评分评价路由（你的）
 app.use('/readers', readersRouter);
 app.use('/loans', loansRouter);
 app.use('/api/reader', readerBorrowRouter);
+app.use('/api/librarian/search-history', librarianSearchBorrowHistory);  // 馆员搜索历史（你的）
+app.use('/api/statistics', statisticsRoutes);                            // 统计路由（你的）
 
 // 兼容旧路径（保留队友的设置）
 app.use('/books', booksRouter);
