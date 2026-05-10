@@ -1,14 +1,18 @@
-// backend/src/routes/auth.js
 const express = require('express');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
 const { signToken } = require('../lib/token');
 const { signLibrarianToken } = require('../lib/librarianToken');
+const prisma = require('../lib/prisma');
 
 const router = express.Router();
-const prisma = new PrismaClient();
-const JWT_SECRET = 'library-management-secret-key-2024';
+
+async function writeAuditLog(data) {
+  try {
+    await prisma.auditLog.create({ data });
+  } catch (error) {
+    console.warn('Failed to write audit log:', error.message);
+  }
+}
 
 // --- 统一登录接口 (处理学生、图书馆员、管理员) ---
 router.post('/login', async (req, res) => {
@@ -38,6 +42,14 @@ router.post('/login', async (req, res) => {
         sub: String(user.id),
         id: user.id,
         role: user.role
+      });
+
+      writeAuditLog({
+        userId: user.id,
+        action: 'LOGIN',
+        entity: 'User',
+        entityId: user.id,
+        detail: `学生 ${user.email} 登录`,
       });
 
       return res.json({
@@ -80,6 +92,14 @@ router.post('/login', async (req, res) => {
         employeeId: librarian.employeeId
       });
 
+      writeAuditLog({
+        userId: librarian.id,
+        action: 'LOGIN',
+        entity: 'User',
+        entityId: librarian.id,
+        detail: `馆员 ${librarian.employeeId} 登录`,
+      });
+
       return res.json({
         message: '图书馆员登录成功',
         token: token,
@@ -118,6 +138,14 @@ router.post('/login', async (req, res) => {
         role: user.role
       });
 
+      writeAuditLog({
+        userId: user.id,
+        action: 'LOGIN',
+        entity: 'User',
+        entityId: user.id,
+        detail: `管理员 ${user.email} 登录`,
+      });
+
       return res.json({
         message: '管理员登录成功',
         token: token,
@@ -137,7 +165,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// --- 学生登录接口 (使用数据库真实数据) ---
+// --- 学生登录接口 ---
 router.post('/login-student', async (req, res) => {
   const { email, password } = req.body;
 
@@ -161,6 +189,14 @@ router.post('/login-student', async (req, res) => {
       role: user.role
     });
 
+    writeAuditLog({
+      userId: user.id,
+      action: 'LOGIN',
+      entity: 'User',
+      entityId: user.id,
+      detail: `学生 ${user.email} 登录（旧接口）`,
+    });
+
     res.json({
       message: '学生登录成功',
       token: token,
@@ -176,7 +212,7 @@ router.post('/login-student', async (req, res) => {
   }
 });
 
-// --- 图书馆员注册接口（改为写入 User 表）---
+// --- 图书馆员注册接口 ---
 router.post('/register', async (req, res) => {
   const { employeeId, name, password } = req.body;
 
@@ -188,7 +224,6 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // 检查工号是否已存在（在 User 表中）
     const existing = await prisma.user.findFirst({
       where: { employeeId: employeeId }
     });
@@ -197,15 +232,22 @@ router.post('/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    // 创建馆员到 User 表
     const librarian = await prisma.user.create({
       data: {
         employeeId: employeeId,
         name: name,
         passwordHash: hashedPassword,
-        email: `${employeeId}@librarian.com`, // 生成默认邮箱
+        email: `${employeeId}@librarian.com`,
         role: 'LIBRARIAN'
       }
+    });
+
+    writeAuditLog({
+      userId: librarian.id,
+      action: 'REGISTER',
+      entity: 'User',
+      entityId: librarian.id,
+      detail: `馆员 ${name}(工号:${employeeId}) 注册`,
     });
 
     res.status(201).json({
@@ -224,7 +266,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// --- 图书馆员登录接口（改为从 User 表查询）---
+// --- 图书馆员登录接口 ---
 router.post('/login-librarian', async (req, res) => {
   const { employeeId, password } = req.body;
 
@@ -253,6 +295,14 @@ router.post('/login-librarian', async (req, res) => {
       id: librarian.id,
       role: librarian.role,
       employeeId: librarian.employeeId
+    });
+
+    writeAuditLog({
+      userId: librarian.id,
+      action: 'LOGIN',
+      entity: 'User',
+      entityId: librarian.id,
+      detail: `馆员 ${employeeId} 登录（旧接口）`,
     });
 
     res.json({
@@ -298,6 +348,14 @@ router.post('/login-admin', async (req, res) => {
       sub: String(user.id),
       id: user.id,
       role: user.role
+    });
+
+    writeAuditLog({
+      userId: user.id,
+      action: 'LOGIN',
+      entity: 'User',
+      entityId: user.id,
+      detail: `管理员 ${user.email} 登录（旧接口）`,
     });
 
     res.json({

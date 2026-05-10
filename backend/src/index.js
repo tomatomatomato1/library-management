@@ -15,7 +15,8 @@ const announcementsRouter = require('./routes/announcements');
 const messagesRouter = require('./routes/messages');                              // 你的：消息路由
 const ratingsRouter = require('./routes/ratings');                                // 你的：评分路由
 const librarianSearchBorrowHistory = require('./routes/LibrarianSearchBorrowHistory');  // 你的：馆员搜索历史
-const statisticsRoutes = require('./routes/statistics');                          // 你的：统计路由
+const statisticsRoutes = require('./routes/statistics');// 你的：统计路由
+const configRouter = require('./routes/config');
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
@@ -43,6 +44,7 @@ app.use('/loans', loansRouter);
 app.use('/api/reader', readerBorrowRouter);
 app.use('/api/librarian/search-history', librarianSearchBorrowHistory);  // 馆员搜索历史（你的）
 app.use('/api/statistics', statisticsRoutes);                            // 统计路由（你的）
+app.use('/api/config', configRouter);                                        // 系统配置
 
 // 兼容旧路径（保留队友的设置）
 app.use('/books', booksRouter);

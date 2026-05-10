@@ -1,4 +1,3 @@
-<Route path="/admin/config" element={<div>✅ 路由匹配成功</div>} />
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import BookSearch from './pages/BookSearch';

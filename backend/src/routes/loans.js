@@ -1,6 +1,14 @@
 const express = require('express');
 const prisma = require('../lib/prisma');
 const { requireAuth } = require('../middleware/auth');
+
+async function writeAuditLog(data) {
+  try {
+    await prisma.auditLog.create({ data });
+  } catch (error) {
+    console.warn('Failed to write audit log:', error.message);
+  }
+}
 const {
   getFineRatePerDay,
   startOfLocalDay,
@@ -425,6 +433,14 @@ router.post('/lend', requireAuth, checkLibrarianOrAdmin, async (req, res) => {
       data: { status: 'BORROWED' }
     });
 
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'LEND_BOOK',
+      entity: 'Loan',
+      entityId: loan.id,
+      detail: `馆员将《${book.title}》借给学生 ${student.name}`,
+    });
+
     res.status(201).json({
       success: true,
       message: `借书成功！《${book.title}》已借给 ${student.name}`,
@@ -523,6 +539,14 @@ router.post('/return', requireAuth, checkLibrarianOrAdmin, async (req, res) => {
     } else if (returnSummary.fineAmount > 0) {
       message += `，逾期罚款 ¥${returnSummary.fineAmount.toFixed(2)}`;
     }
+
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'RETURN_BOOK',
+      entity: 'Loan',
+      entityId: Number(loanId),
+      detail: `馆员还书《${loan.copy.book.title}》，罚款 ¥${returnSummary.fineAmount.toFixed(2)}（${returnSummary.waiveFineApplied ? '已免除' : '已收取'}）`,
+    });
 
     res.json({
       success: true,

@@ -9,6 +9,14 @@ function normalizeText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+async function writeAuditLog(data) {
+  try {
+    await prisma.auditLog.create({ data });
+  } catch (error) {
+    console.warn('Failed to write audit log:', error.message);
+  }
+}
+
 function requireAdmin(req, res, next) {
   if (req.user.role !== 'ADMIN') {
     return res.status(403).json({
@@ -57,6 +65,14 @@ async function createAnnouncement(req, res, next) {
           },
         },
       },
+    });
+
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'CREATE_ANNOUNCEMENT',
+      entity: 'Announcement',
+      entityId: announcement.id,
+      detail: `管理员 ${req.user.email} 创建了公告《${title}》`,
     });
 
     return res.status(201).json({
@@ -238,6 +254,14 @@ async function updateAnnouncement(req, res, next) {
       },
     });
 
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'UPDATE_ANNOUNCEMENT',
+      entity: 'Announcement',
+      entityId: id,
+      detail: `管理员 ${req.user.email} 更新了公告《${title}》`,
+    });
+
     return res.json({
       message: 'Announcement updated successfully.',
       announcement,
@@ -273,6 +297,14 @@ async function deleteAnnouncement(req, res, next) {
 
     await prisma.announcement.delete({
       where: { id },
+    });
+
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'DELETE_ANNOUNCEMENT',
+      entity: 'Announcement',
+      entityId: id,
+      detail: `管理员 ${req.user.email} 删除了公告《${existing.title}》`,
     });
 
     return res.json({

@@ -11,6 +11,7 @@ const messagesRouter = require('./routes/messages');
 const ratingsRouter = require('./routes/ratings');
 const readerBorrowRouter = require('./routes/reader-borrow');
 const librarianSearchBorrowHistory = require('./routes/LibrarianSearchBorrowHistory');
+const configRouter = require('./routes/config');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/messages', messagesRouter);                                    // 
 app.use('/api/ratings', ratingsRouter);                                      // 你的：评分路由
 app.use('/api/reader', readerBorrowRouter);                                  // 你的：读者借阅路由
 app.use('/api/librarian/search-history', librarianSearchBorrowHistory);      // 你的：馆员搜索历史
+app.use('/api/config', configRouter);                                        // 系统配置
 
 // 404 处理（使用组长的详细版本）
 app.use((req, res) => {

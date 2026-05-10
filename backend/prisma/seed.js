@@ -350,6 +350,14 @@ async function main() {
 
   console.log('\n✅ 数据清空完成\n');
 
+    // 声明所有计数器（顶层）
+    let bookCount = 0;
+    let copyCount = 0;
+    let actualLoanCount = 0;
+    let ratingCount = 0;
+    let holdCount = 0;
+    let wishlistCount = 0;
+
   // ==================== 创建用户 ====================
   console.log('👥 创建用户账号...');
 
@@ -419,9 +427,6 @@ async function main() {
 
   // ==================== 创建图书和副本 ====================
   console.log('📚 创建图书和副本...');
-  
-  let bookCount = 0;
-  let copyCount = 0;
 
   for (const bookData of BOOKS_DATA) {
     const book = await prisma.book.create({
@@ -473,7 +478,6 @@ async function main() {
     });
 
     const loanCount = Math.min(5, allCopies.length);
-    let actualLoanCount = 0;
     
     for (let i = 0; i < loanCount; i++) {
       const student = students[i % students.length];
@@ -521,7 +525,6 @@ async function main() {
   console.log('⭐ 创建示例评分...');
   
   const allBooks = await prisma.book.findMany({ take: 10 });
-  let ratingCount = 0;
   
   for (const book of allBooks) {
     if (students.length > 0 && Math.random() > 0.5) {
@@ -551,8 +554,7 @@ async function main() {
 
   // ==================== 创建预约 (Hold) ====================
   console.log('📌 创建预约记录...');
-  
-  let holdCount = 0;
+
   const booksForHold = await prisma.book.findMany({ take: 8 });
   
   for (let i = 0; i < booksForHold.length && i < students.length * 2; i++) {
@@ -583,8 +585,7 @@ async function main() {
 
   // ==================== 创建心愿单 (Wishlist) ====================
   console.log('❤️  创建心愿单记录...');
-  
-  let wishlistCount = 0;
+
   const booksForWishlist = await prisma.book.findMany({ skip: 5, take: 10 });
   
   for (let i = 0; i < booksForWishlist.length && i < students.length * 2; i++) {

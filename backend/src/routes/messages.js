@@ -5,6 +5,14 @@ const prisma = require('../lib/prisma');
 const { verifyToken } = require('../lib/token');
 const { verifyLibrarianToken } = require('../lib/librarianToken');
 
+async function writeAuditLog(data) {
+  try {
+    await prisma.auditLog.create({ data });
+  } catch (error) {
+    console.warn('Failed to write audit log:', error.message);
+  }
+}
+
 function extractBearerToken(authorizationHeader) {
   if (!authorizationHeader) {
     return null;
@@ -154,6 +162,14 @@ router.post('/send', requireMessageAuth, async (req, res) => {
           }
         }
       }
+    });
+
+    writeAuditLog({
+      userId: senderId,
+      action: 'SEND_MESSAGE',
+      entity: 'Message',
+      entityId: message.id,
+      detail: `用户 ${senderId} 向用户 ${receiverId} 发送消息`,
     });
 
     res.status(201).json(message);
@@ -390,6 +406,14 @@ router.delete('/:messageId', requireMessageAuth, async (req, res) => {
     }
 
     await prisma.message.delete({ where: { id: messageId } });
+
+    writeAuditLog({
+      userId,
+      action: 'DELETE_MESSAGE',
+      entity: 'Message',
+      entityId: messageId,
+      detail: `用户 ${userId} 删除了消息 ${messageId}`,
+    });
 
     res.json({ success: true, message: '消息已删除' });
   } catch (error) {

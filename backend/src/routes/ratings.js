@@ -4,6 +4,14 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+async function writeAuditLog(data) {
+  try {
+    await prisma.auditLog.create({ data });
+  } catch (error) {
+    console.warn('Failed to write audit log:', error.message);
+  }
+}
+
 async function calculateAverageRating(bookId) {
   const result = await prisma.rating.aggregate({
     where: { bookId },
@@ -86,6 +94,14 @@ router.post('/', requireAuth, async (req, res) => {
     }
 
     const avgRating = await calculateAverageRating(parseInt(bookId));
+
+    writeAuditLog({
+      userId,
+      action: existingRating ? 'UPDATE_RATING' : 'RATING_BOOK',
+      entity: 'Rating',
+      entityId: rating.id,
+      detail: `用户 ${req.user.email} 对图书 ${bookId} 评分 ${stars} 星`,
+    });
 
     res.json({
       success: true,
@@ -180,6 +196,14 @@ router.delete('/:ratingId', requireAuth, async (req, res) => {
     }
 
     await prisma.rating.delete({ where: { id: ratingId } });
+
+    writeAuditLog({
+      userId,
+      action: 'DELETE_RATING',
+      entity: 'Rating',
+      entityId: ratingId,
+      detail: `用户 ${req.user.email} 删除了对图书 ${rating.bookId} 的评分`,
+    });
 
     const avgRating = await calculateAverageRating(rating.bookId);
 

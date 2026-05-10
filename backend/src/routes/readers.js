@@ -233,6 +233,14 @@ async function updateUserRole(req, res, next) {
       }
     });
 
+    writeAuditLog({
+      userId: req.user.id,
+      action: 'UPDATE_USER_ROLE',
+      entity: 'User',
+      entityId: userId,
+      detail: `管理员将用户 ${userId} 角色更新为 ${role}`,
+    });
+
     res.json({ message: '角色更新成功', user });
   } catch (error) {
     next(error);
