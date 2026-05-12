@@ -33,7 +33,6 @@ async function buildBorrowHistoryResponse(user) {
   const decoratedLoans = user.loans.map((loan) => decorateLoanWithFine(loan, fineRatePerDay));
 
   return {
-    success: true,
     userInfo: {
       id: user.id,
       name: user.name,
@@ -57,9 +56,11 @@ router.get('/by-name', async (req, res) => {
       });
     }
 
-    const user = await prisma.user.findFirst({
+    const users = await prisma.user.findMany({
       where: {
-        name: name.trim()
+        name: {
+          contains: name.trim()
+        }
       },
       include: {
         loans: {
@@ -75,14 +76,18 @@ router.get('/by-name', async (req, res) => {
       }
     });
 
-    if (!user) {
+    if (!users || users.length === 0) {
       return res.status(404).json({
         success: false,
         message: '未找到该用户'
       });
     }
 
-    res.json(await buildBorrowHistoryResponse(user));
+    const results = await Promise.all(users.map(buildBorrowHistoryResponse));
+    res.json({
+      success: true,
+      users: results
+    });
   } catch (error) {
     console.error('查询借阅历史失败:', error);
     res.status(500).json({
@@ -104,9 +109,11 @@ router.get('/by-studentId', async (req, res) => {
       });
     }
 
-    const user = await prisma.user.findUnique({
+    const users = await prisma.user.findMany({
       where: {
-        studentId: studentId.trim()
+        studentId: {
+          contains: studentId.trim()
+        }
       },
       include: {
         loans: {
@@ -122,14 +129,18 @@ router.get('/by-studentId', async (req, res) => {
       }
     });
 
-    if (!user) {
+    if (!users || users.length === 0) {
       return res.status(404).json({
         success: false,
         message: '未找到该用户'
       });
     }
 
-    res.json(await buildBorrowHistoryResponse(user));
+    const results = await Promise.all(users.map(buildBorrowHistoryResponse));
+    res.json({
+      success: true,
+      users: results
+    });
   } catch (error) {
     console.error('查询借阅历史失败:', error);
     res.status(500).json({

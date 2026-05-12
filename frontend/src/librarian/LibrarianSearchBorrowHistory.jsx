@@ -6,8 +6,7 @@ export default function LibrarianSearchBorrowHistory({ onBack }) {
   const [searchType, setSearchType] = useState('username') // 'username' 或 'studentId'
   const [searchValue, setSearchValue] = useState('')
   const [loading, setLoading] = useState(false)
-  const [borrowHistory, setBorrowHistory] = useState([])
-  const [userInfo, setUserInfo] = useState(null)
+  const [searchResults, setSearchResults] = useState([])
   const [error, setError] = useState('')
   const [searchPerformed, setSearchPerformed] = useState(false)
 
@@ -47,21 +46,19 @@ const searchBorrowHistory = async () => {
     const data = await response.json()
 
     if (response.ok && data.success) {
-      setBorrowHistory(data.borrowHistory || [])
-      setUserInfo(data.userInfo)
-      if (data.borrowHistory.length === 0) {
-        setError('该用户暂无借阅记录')
+      const results = data.users || []
+      setSearchResults(results)
+      if (results.length === 0) {
+        setError('未找到该用户或该用户暂无借阅记录')
       }
     } else {
       setError(data.message || '未找到该用户或查询失败')
-      setBorrowHistory([])
-      setUserInfo(null)
+      setSearchResults([])
     }
   } catch (error) {
     console.error('查询借阅历史失败:', error)
     setError('网络错误，请稍后重试')
-    setBorrowHistory([])
-    setUserInfo(null)
+    setSearchResults([])
   } finally {
     setLoading(false)
   }
@@ -170,157 +167,144 @@ const searchBorrowHistory = async () => {
           </div>
 
           {error && !loading && (
-            <div className={`mt-4 p-3 rounded-lg ${searchPerformed && borrowHistory.length === 0 && !error.includes('暂无') ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-600'}`}>
+            <div className={`mt-4 p-3 rounded-lg ${searchPerformed && searchResults.length === 0 && !error.includes('暂无') ? 'bg-red-50 text-red-600' : 'bg-yellow-50 text-yellow-600'}`}>
               {error}
             </div>
           )}
         </div>
 
         {/* 查询结果 */}
-        {userInfo && (
+        {searchResults.length > 0 && (
           <div className="p-6">
-            {/* 用户信息卡片 */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-6 border border-blue-200">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="text-3xl">👤</div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800">用户信息</h3>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">用户名</p>
-                  <p className="font-semibold text-gray-800">{userInfo.email || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">学号</p>
-                  <p className="font-semibold text-gray-800">{userInfo.studentId || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">姓名</p>
-                  <p className="font-semibold text-gray-800">{userInfo.name || '-'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">当前在借数量</p>
-                  <p className="font-semibold text-blue-600">{userInfo.currentBorrowCount || 0} 本</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 借阅历史列表 */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                  <span>📚</span> 借阅记录
-                  <span className="text-sm text-gray-500 font-normal">
-                    (共 {borrowHistory.length} 条)
-                  </span>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <span>📋</span> 搜索结果
                 </h3>
+                <p className="text-sm text-gray-500">已匹配 {searchResults.length} 位用户</p>
               </div>
-
-              {borrowHistory.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr>
-                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">序号</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">图书名称</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">条形码</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">借书时间</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">应还时间</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">还书时间</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">状态</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">罚款</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {borrowHistory.map((record, index) => {
-                        const statusInfo = getStatusInfo(record.status)
-                        const overdueDays = Number(record.overdueDays || 0)
-                        
-                        return (
-                          <tr key={record.id || index} className="hover:bg-gray-50 transition">
-                            <td className="px-4 py-3 text-sm text-gray-600">{index + 1}</td>
-                            <td className="px-4 py-3">
-                              <div className="font-medium text-gray-800">{record.bookName}</div>
-                            </td>
-                            <td className="px-4 py-3 align-top">
-                              {record.bookCode ? (
-                                <div className="max-w-[180px]">
-                                  <IsbnBarcode isbn={record.bookCode} height={48} />
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-sm">-</span>
-                             )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{formatDate(record.borrowDate)}</td>
-                            <td className="px-4 py-3">
-                              <div className="text-sm text-gray-600">{formatDate(record.dueDate)}</div>
-                              {record.status !== 'returned' && overdueDays > 0 && (
-                                <div className="text-xs text-red-500 mt-1">逾期 {overdueDays} 天</div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
-                              {record.returnDate ? formatDate(record.returnDate) : '-'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bg} ${statusInfo.color}`}>
-                                <span>{statusInfo.icon}</span>
-                                <span>{statusInfo.text}</span>
-                              </span>
-                            </td>
-                            <td className={`px-4 py-3 text-sm ${record.estimatedFineAmount > 0 || record.fineForgiven ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                              {formatFineDisplay(record)}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <div className="text-6xl mb-4">📭</div>
-                  <p className="text-gray-500">暂无借阅记录</p>
-                </div>
-              )}
             </div>
-            {/* 统计信息 */}
-            {borrowHistory.length > 0 && (
-              <div className="mt-6 bg-gray-50 rounded-lg p-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">
-                      {borrowHistory.filter(r => r.status === 'returned').length}
-                    </p>
-                    <p className="text-sm text-gray-500">已归还</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">
-                      {borrowHistory.filter(r => r.status === 'borrowed').length}
-                    </p>
-                    <p className="text-sm text-gray-500">借出中</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-red-600">
-                      {borrowHistory.filter(r => r.status === 'overdue').length}
-                    </p>
-                    <p className="text-sm text-gray-500">已逾期</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-purple-600">
-                      {borrowHistory.length}
-                    </p>
-                    <p className="text-sm text-gray-500">总借阅次数</p>
+
+            {searchResults.map((result, userIndex) => (
+              <div key={result.userInfo.id || userIndex} className="mb-10 border border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-blue-200">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-800">用户 {userIndex + 1}</h4>
+                      <p className="text-sm text-gray-500">{result.userInfo.name || '-'} · {result.userInfo.email || '-'} · 学号 {result.userInfo.studentId || '-'}</p>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      当前在借：<span className="font-semibold text-blue-600">{result.userInfo.currentBorrowCount || 0}</span> 本
+                    </div>
                   </div>
                 </div>
+
+                <div className="p-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">序号</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">图书名称</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">条形码</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">借书时间</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">应还时间</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">还书时间</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">状态</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">罚款</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {result.borrowHistory.map((record, index) => {
+                          const statusInfo = getStatusInfo(record.status)
+                          const overdueDays = Number(record.overdueDays || 0)
+
+                          return (
+                            <tr key={record.id || index} className="hover:bg-gray-50 transition">
+                              <td className="px-4 py-3 text-sm text-gray-600">{index + 1}</td>
+                              <td className="px-4 py-3">
+                                <div className="font-medium text-gray-800">{record.bookName}</div>
+                              </td>
+                              <td className="px-4 py-3 align-top">
+                                {record.bookCode ? (
+                                  <div className="max-w-[180px]">
+                                    <IsbnBarcode isbn={record.bookCode} height={48} />
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400 text-sm">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">{formatDate(record.borrowDate)}</td>
+                              <td className="px-4 py-3">
+                                <div className="text-sm text-gray-600">{formatDate(record.dueDate)}</div>
+                                {record.status !== 'returned' && overdueDays > 0 && (
+                                  <div className="text-xs text-red-500 mt-1">逾期 {overdueDays} 天</div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {record.returnDate ? formatDate(record.returnDate) : '-'}
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${statusInfo.bg} ${statusInfo.color}`}>
+                                  <span>{statusInfo.icon}</span>
+                                  <span>{statusInfo.text}</span>
+                                </span>
+                              </td>
+                              <td className={`px-4 py-3 text-sm ${record.estimatedFineAmount > 0 || record.fineForgiven ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                                {formatFineDisplay(record)}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {result.borrowHistory.length === 0 && (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <div className="text-6xl mb-4">📭</div>
+                      <p className="text-gray-500">该用户暂无借阅记录</p>
+                    </div>
+                  )}
+
+                  {result.borrowHistory.length > 0 && (
+                    <div className="mt-6 bg-gray-50 rounded-lg p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {result.borrowHistory.filter(r => r.status === 'returned').length}
+                          </p>
+                          <p className="text-sm text-gray-500">已归还</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {result.borrowHistory.filter(r => r.status === 'borrowed').length}
+                          </p>
+                          <p className="text-sm text-gray-500">借出中</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-red-600">
+                            {result.borrowHistory.filter(r => r.status === 'overdue').length}
+                          </p>
+                          <p className="text-sm text-gray-500">已逾期</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-purple-600">
+                            {result.borrowHistory.length}
+                          </p>
+                          <p className="text-sm text-gray-500">总借阅次数</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            )}
+            ))}
           </div>
         )}
 
         {/* 未搜索时的提示 */}
-        {!searchPerformed && !userInfo && !loading && (
+        {!searchPerformed && searchResults.length === 0 && !loading && (
           <div className="p-12 text-center">
             <div className="text-6xl mb-4">🔍</div>
             <p className="text-gray-500">请输入用户名或学号查询用户借阅历史</p>
