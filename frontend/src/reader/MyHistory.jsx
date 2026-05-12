@@ -109,6 +109,12 @@ function MyHistory() {
     return loan.isOverdue || false;
   };
 
+  // 判断是否需要显示归还并支付罚款按钮
+  const needsFinePayment = (loan) => {
+    // 图书未归还且已逾期
+    return !loan.returnDate && loan.isOverdue && loan.estimatedFineAmount > 0;
+  };
+
   // 获取预计罚款金额（使用后端返回的数据）
   const getEstimatedFine = (loan) => {
     return loan.estimatedFineAmount || 0;
@@ -502,12 +508,12 @@ function MyHistory() {
                               <button
                                 onClick={() => handleReturn(loan.id)}
                                 className={`px-2 py-1 text-xs rounded hover:opacity-80 transition ${
-                                  isOverdue(loan.dueDate) 
+                                  needsFinePayment(loan)
                                     ? 'bg-orange-500 text-white hover:bg-orange-600' 
                                     : 'bg-red-500 text-white hover:bg-red-600'
                                 }`}
                               >
-                                {isOverdue(loan) 
+                                {needsFinePayment(loan)
                                   ? `归还并支付 ¥${getEstimatedFine(loan).toFixed(2)} 罚款` 
                                   : '归还'
                                 }
