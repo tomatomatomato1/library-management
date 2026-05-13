@@ -81,6 +81,7 @@ model Loan {
   id           Int       @id @default(autoincrement())
   copyId       Int
   userId       Int
+  barcode      String    @unique  // 借阅条形码 BC-xxxxxx-xxx
   checkoutDate DateTime  @default(now())
   dueDate      DateTime
   returnDate   DateTime?

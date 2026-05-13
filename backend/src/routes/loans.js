@@ -20,6 +20,29 @@ const router = express.Router();
 
 const LOAN_DURATION_DAYS = 30;
 
+// 生成借阅条形码 BC-xxxxxx-xxx 格式
+function generateLoanBarcode() {
+  const part1 = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  const part2 = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  return `BC-${part1}-${part2}`;
+}
+
+// 生成唯一的借阅条形码
+async function generateUniqueBarcode() {
+  let barcode;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  do {
+    barcode = generateLoanBarcode();
+    attempts++;
+    const existing = await prisma.loan.findUnique({ where: { barcode } });
+    if (!existing) return barcode;
+  } while (attempts < maxAttempts);
+  
+  throw new Error('无法生成唯一的条形码');
+}
+
 function checkLibrarianOrAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ message: '未认证' });
@@ -447,10 +470,13 @@ router.post('/lend', requireAuth, checkLibrarianOrAdmin, async (req, res) => {
     const checkoutDate = new Date();
     const dueDate = await calculateDueDate(checkoutDate);
 
+    const barcode = await generateUniqueBarcode();
+    
     const loan = await prisma.loan.create({
       data: {
         userId: Number(userId),
         copyId: selectedCopy.id,
+        barcode,
         checkoutDate,
         dueDate,
         fineAmount: 0,
@@ -476,7 +502,7 @@ router.post('/lend', requireAuth, checkLibrarianOrAdmin, async (req, res) => {
     res.status(201).json({
       success: true,
       message: `借书成功！《${book.title}》已借给 ${student.name}`,
-      loan: { id: loan.id, bookTitle: book.title, checkoutDate, dueDate }
+      loan: { id: loan.id, barcode: loan.barcode, bookTitle: book.title, checkoutDate, dueDate }
     });
   } catch (error) {
     console.error('Lend book error:', error);

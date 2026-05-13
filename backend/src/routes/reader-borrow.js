@@ -10,6 +10,29 @@ const {
 const router = express.Router();
 
 const MAX_BORROW_LIMIT = 5;
+
+// 生成借阅条形码 BC-xxxxxx-xxx 格式
+function generateLoanBarcode() {
+  const part1 = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  const part2 = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  return `BC-${part1}-${part2}`;
+}
+
+// 生成唯一的借阅条形码
+async function generateUniqueBarcode() {
+  let barcode;
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  do {
+    barcode = generateLoanBarcode();
+    attempts++;
+    const existing = await prisma.loan.findUnique({ where: { barcode } });
+    if (!existing) return barcode;
+  } while (attempts < maxAttempts);
+  
+  throw new Error('无法生成唯一的条形码');
+}
 const MAX_RENEW_COUNT = 2;
 const RENEW_DAYS = 14;
 
@@ -107,10 +130,13 @@ router.post('/borrow/:copyId', requireAuth, async (req, res) => {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 14);
 
+    const barcode = await generateUniqueBarcode();
+    
     const loan = await prisma.loan.create({
       data: {
         copyId: copyId,
         userId: req.user.id,
+        barcode,
         dueDate: dueDate,
         fineAmount: 0,
         finePaid: false,
@@ -141,8 +167,9 @@ router.post('/borrow/:copyId', requireAuth, async (req, res) => {
       message: '借阅成功',
       loan: {
         id: loan.id,
+        barcode: loan.barcode,
         bookTitle: loan.copy.book.title,
-        barcode: loan.copy.barcode,
+        copyBarcode: loan.copy.barcode,
         dueDate: loan.dueDate
       }
     });
