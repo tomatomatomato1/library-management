@@ -18,8 +18,9 @@ async function calculateAverageRating(bookId) {
     _avg: { stars: true },
     _count: { stars: true }
   });
+  const avg = result._avg.stars;
   return {
-    averageRating: result._avg.stars || 0,
+    averageRating: avg ? Math.round(avg * 10) / 10 : 0,
     totalRatings: result._count.stars
   };
 }
