@@ -4,9 +4,12 @@
  * 运行: node test-reminder.js
  */
 
+require('dotenv').config();
+
 const prisma = require('./src/lib/prisma');
 const { checkAndSendReminders, getReminderLogs, getUserReminderStats } = require('./src/lib/reminder');
 const { initEmailService } = require('./src/lib/email');
+const { cleanupReminderTestData } = require('./cleanup-test-data');
 const bcrypt = require('bcrypt');
 
 async function runTests() {
@@ -22,19 +25,17 @@ async function runTests() {
     // 1. 创建测试数据
     console.log('\n📝 第一步: 创建测试数据\n');
 
-    // 清空现有提醒日志
-    await prisma.reminderLog.deleteMany({});
-    console.log('✓ 已清空现有提醒日志');
+    await cleanupReminderTestData();
 
     // 创建测试用户
     const testUser = await prisma.user.upsert({
-      where: { email: 'test-reminder@library.com' },
+      where: { email: 'hyfceshi@163.com' },
       update: {},
       create: {
-        name: '测试学生',
-        email: 'test-reminder@library.com',
-        passwordHash: await bcrypt.hash('password123', 10),
-        studentId: 'TEST2026001',
+        name: '测试学生1',
+        email: 'hyfceshi@163.com',
+        passwordHash: await bcrypt.hash('123456', 10),
+        studentId: '123std',
         role: 'STUDENT',
       },
     });
@@ -139,7 +140,7 @@ async function runTests() {
       },
     });
     loans.push(loan4);
-    console.log(`✓ 创建借阅记录4: 5天后到期 (${in5Days.toLocaleDateString('zh-CN')}) [不应被提醒]`);
+    console.log(`✓ 创建借阅记录4: 6天后到期 (${in5Days.toLocaleDateString('zh-CN')}) [不应被提醒]`);
 
     // 2. 执行提醒任务
     console.log('\n📧 第二步: 执行图书到期提醒任务\n');
@@ -221,15 +222,6 @@ async function runTests() {
     console.log('\n' + '='.repeat(80));
     console.log('✅ 所有功能测试完成！');
     console.log('='.repeat(80) + '\n');
-
-    // 清理测试数据提示
-    console.log('💡 提示: 如需清理测试数据，可运行以下命令:');
-    console.log('   prisma db execute --stdin << EOF');
-    console.log('   DELETE FROM Loan WHERE barcode LIKE "LN-TEST-%";');
-    console.log('   DELETE FROM Copy WHERE barcode LIKE "TEST-COPY-%";');
-    console.log('   DELETE FROM Book WHERE isbn LIKE "TEST-ISBN-%";');
-    console.log('   DELETE FROM User WHERE email = "test-reminder@library.com";');
-    console.log('   EOF\n');
   } catch (error) {
     console.error('\n❌ 测试出错:', error);
     process.exit(1);

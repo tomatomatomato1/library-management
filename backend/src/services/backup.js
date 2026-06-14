@@ -83,6 +83,9 @@ async function restoreBackup(backupId, userId) {
   if (backup.status !== STATUS.COMPLETED) {
     throw new Error(`备份状态为 "${backup.status}"，无法恢复`);
   }
+  if (!fs.existsSync(backup.filepath)) {
+    throw new Error('备份文件不存在，无法恢复');
+  }
 
   // 先备份当前数据库（恢复前安全备份，跳过清理因为旧数据将被覆盖）
   const safetyBackup = await createBackup({
@@ -91,15 +94,33 @@ async function restoreBackup(backupId, userId) {
     skipCleanup: true,
   });
 
+  let copySucceeded = false;
   try {
     await prisma.$disconnect();
     fs.copyFileSync(backup.filepath, DB_PATH);
+    copySucceeded = true;
     await prisma.$connect();
 
-    await prisma.backupLog.update({
+    // 备份文件在写入 BackupLog 之前生成，恢复后的库中可能没有对应 ID
+    const restoredAt = new Date();
+    const { count } = await prisma.backupLog.updateMany({
       where: { id: backupId },
-      data: { restoredAt: new Date() },
+      data: { restoredAt },
     });
+    if (count === 0) {
+      await prisma.backupLog.create({
+        data: {
+          filename: backup.filename,
+          filepath: backup.filepath,
+          sizeBytes: backup.sizeBytes,
+          status: STATUS.COMPLETED,
+          type: backup.type,
+          note: '已从该备份恢复数据库',
+          restoredAt,
+          createdBy: userId,
+        },
+      });
+    }
 
     return {
       message: '数据库恢复成功',
@@ -110,6 +131,9 @@ async function restoreBackup(backupId, userId) {
     await prisma.$connect().catch((connErr) => {
       console.error('恢复后数据库重连失败:', connErr.message);
     });
+    if (copySucceeded) {
+      throw new Error(`数据库已恢复，但记录恢复元数据失败: ${error.message}`);
+    }
     throw new Error(`恢复失败: ${error.message}`);
   }
 }

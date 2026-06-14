@@ -15,8 +15,8 @@ let transporter = null;
 async function initEmailService() {
   // 从环境变量读取邮件配置
   const emailConfig = {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT || '587'),
+    host: process.env.SMTP_HOST || 'smtp.163.com',
+    port: parseInt(process.env.SMTP_PORT || '465'),
     secure: process.env.SMTP_SECURE === 'true' || false, // true for 465, false for other ports
     auth: {
       user: process.env.EMAIL_USER,
